@@ -1,7 +1,7 @@
 """
     :author: Christian Mollière
     :version: 0.1
-    :date: 20-12-2019
+    :date: 09-01-2020
 """
 import pickle
 import sys
@@ -13,6 +13,7 @@ import numpy as np
 import progressbar
 import timeout_decorator
 from google_images_download import google_images_download
+import matplotlib.pyplot as plt
 
 IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 10
 
@@ -65,7 +66,7 @@ class ImageDatasetCompiler:
     def _fetch_from_url(self,url):
         """ fetches a single image from an url and saves it to the image list """
         with urllib.request.urlopen(url) as req:
-            image = np.asarray(bytearray(resp.read()), dtype="uint8")
+            image = np.asarray(bytearray(req.read()), dtype="uint8")
             return cv2.imdecode(image, cv2.IMREAD_COLOR)
 
     def _get_images(self, width, height, upscaling):
@@ -181,3 +182,18 @@ class ImageDatasetCompiler:
             print("ImageDatasetCompiler Warning: No valid dataset to rescale available!")
 
         return self._images
+    
+    def save_preview(self, fname, n_columns=20, n_rows=10):
+    """ creates preview gallery of dataset images """
+    if self._images_in_memory():
+        # pick images
+        indices = np.random.randint(0, self._images.shape[0], (n_columns * n_rows, 1)).squeeze().tolist()
+        # create gallery
+        img_size = self._get_img_size()
+        gallery_rows = []
+        for col in range(n_columns):
+            gallery_row = [self._images[indices[col+n_columns*row],:,:,:].squeeze() for row in range(n_rows)]
+            gallery_rows.append(np.vstack(gallery_row))
+        gallery = np.hstack(gallery_rows)
+        # save gallery
+        plt.imsave(fname,gallery)
